@@ -25,29 +25,101 @@ preferred_contact = st.selectbox(
     ["Phone", "Email", "Text"],
 )
 
-# --- Dynamic questions based on quote type ---
-auto_fields = {}
+# --- Prepare vars so they exist even if not used ---
+auto_drivers = []
+auto_vehicles = []
+garaging_location = ""
+current_insurer = ""
+
 home_fields = {}
 renters_fields = {}
 other_needs = ""
 
+# --- Dynamic questions based on quote type ---
+
 if quote_type == "Auto":
     st.subheader("Auto details")
-    auto_fields["drivers"] = st.text_input(
-        "List all drivers (names & dates of birth)"
+
+    # Number of drivers
+    num_drivers = st.number_input(
+        "How many drivers will be on this policy?",
+        min_value=1,
+        max_value=10,
+        value=1,
+        step=1,
     )
-    auto_fields["vehicles"] = st.text_input(
-        "List all vehicles (year, make, model)"
+
+    st.markdown("#### Driver information")
+    auto_drivers = []
+    for i in range(int(num_drivers)):
+        st.markdown(f"**Driver {i+1}**")
+        d_name = st.text_input(
+            f"Full name (Driver {i+1})",
+            key=f"driver_{i+1}_name",
+        )
+        d_dob = st.text_input(
+            f"Date of birth (Driver {i+1})",
+            key=f"driver_{i+1}_dob",
+            placeholder="MM/DD/YYYY",
+        )
+        d_dl = st.text_input(
+            f"Driver's license number (Driver {i+1})",
+            key=f"driver_{i+1}_dl",
+        )
+        auto_drivers.append(
+            {
+                "name": d_name,
+                "dob": d_dob,
+                "license_number": d_dl,
+            }
+        )
+
+    # Number of vehicles
+    st.markdown("#### Vehicle information")
+    num_vehicles = st.number_input(
+        "How many vehicles will be on this policy?",
+        min_value=1,
+        max_value=10,
+        value=1,
+        step=1,
     )
-    auto_fields["garaging_location"] = st.text_input(
-        "Garaging ZIP / city, state"
-    )
-    auto_fields["current_insurer"] = st.text_input(
-        "Current insurance company (if any)"
-    )
-    auto_fields["tickets_claims"] = st.text_area(
-        "Tickets/accidents/claims in last 5 years"
-    )
+
+    auto_vehicles = []
+    for i in range(int(num_vehicles)):
+        st.markdown(f"**Vehicle {i+1}**")
+        v_year = st.text_input(
+            f"Year (Vehicle {i+1})",
+            key=f"vehicle_{i+1}_year",
+        )
+        v_make = st.text_input(
+            f"Make (Vehicle {i+1})",
+            key=f"vehicle_{i+1}_make",
+        )
+        v_model = st.text_input(
+            f"Model (Vehicle {i+1})",
+            key=f"vehicle_{i+1}_model",
+        )
+        v_vin = st.text_input(
+            f"VIN (Vehicle {i+1})",
+            key=f"vehicle_{i+1}_vin",
+        )
+        v_cov = st.text_area(
+            f"Coverages desired for Vehicle {i+1}",
+            key=f"vehicle_{i+1}_cov",
+        )
+        auto_vehicles.append(
+            {
+                "year": v_year,
+                "make": v_make,
+                "model": v_model,
+                "vin": v_vin,
+                "coverages_desired": v_cov,
+            }
+        )
+
+    garaging_location = st.text_input("Garaging address (street, city, state, ZIP)")
+
+    current_insurer = st.text_input("Current insurance company (if any)")
 
 elif quote_type == "Home":
     st.subheader("Home details")
@@ -94,22 +166,34 @@ if st.button("Submit quote request"):
         st.write(f"**Preferred contact:** {preferred_contact}")
 
         if quote_type == "Auto":
-            st.write("**Auto details:**")
-            for label, value in auto_fields.items():
-                st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
+            st.write("#### Drivers")
+            for idx, d in enumerate(auto_drivers, start=1):
+                st.write(
+                    f"- **Driver {idx}:** {d.get('name','')} | DOB: {d.get('dob','')} | DL: {d.get('license_number','')}"
+                )
+
+            st.write("#### Vehicles")
+            for idx, v in enumerate(auto_vehicles, start=1):
+                st.write(
+                    f"- **Vehicle {idx}:** {v.get('year','')} {v.get('make','')} {v.get('model','')} "
+                    f"(VIN: {v.get('vin','')}) – Coverages: {v.get('coverages_desired','')}"
+                )
+
+            st.write(f"**Garaging location:** {garaging_location}")
+            st.write(f"**Current insurer:** {current_insurer}")
 
         elif quote_type == "Home":
-            st.write("**Home details:**")
+            st.write("#### Home details")
             for label, value in home_fields.items():
                 st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
 
         elif quote_type == "Renters":
-            st.write("**Renters details:**")
+            st.write("#### Renters details")
             for label, value in renters_fields.items():
                 st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
 
         else:
-            st.write("**Other coverage needs:**")
+            st.write("#### Other coverage needs")
             st.write(other_needs)
 
         st.write("**Notes:**")
