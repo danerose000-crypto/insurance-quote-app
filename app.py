@@ -14,10 +14,16 @@ st.markdown(
         background-color: #f4f4f4; /* light gray background */
     }
 
-    /* Make all inputs white so they pop against the gray */
-    input, textarea, select {
+    /* Make text fields white so they pop against the gray */
+    input, textarea {
         background-color: #ffffff !important;
     }
+
+    /* Make Streamlit selectboxes white too (without weird white line) */
+    div[data-baseweb="select"] > div {
+        background-color: #ffffff !important;
+    }
+
 
     /* Top header card */
     .rose-header {
