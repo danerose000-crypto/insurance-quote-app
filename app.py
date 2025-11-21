@@ -1,9 +1,5 @@
 import streamlit as st
 
-st.set_page_config(page_title="Insurance Quote – Test", layout="centered")
-
-import streamlit as st
-
 st.set_page_config(page_title="Insurance Quote Request", layout="centered")
 
 st.title("Rose Insurance – Quote Request")
@@ -12,7 +8,7 @@ st.write("Fill this out and I'll shop your insurance options and follow up with 
 # --- Quote type selection ---
 quote_type = st.selectbox(
     "What do you want a quote for?",
-    ["Auto", "Home", "Renters", "Other"],
+    ["Auto", "Home", "Landlord", "Renters", "Commercial", "Other"],
 )
 
 # --- Contact info ---
@@ -32,7 +28,9 @@ garaging_location = ""
 current_insurer = ""
 
 home_fields = {}
+landlord_fields = {}
 renters_fields = {}
+commercial_fields = {}
 other_needs = ""
 
 # --- Dynamic questions based on quote type ---
@@ -117,28 +115,64 @@ if quote_type == "Auto":
             }
         )
 
-    garaging_location = st.text_input("Garaging address (street, city, state, ZIP)")
-
+    garaging_location = st.text_input(
+        "Garaging address (street, city, state, ZIP)"
+    )
     current_insurer = st.text_input("Current insurance company (if any)")
 
 elif quote_type == "Home":
     st.subheader("Home details")
-    home_fields["property_address"] = st.text_input("Property address")
-    home_fields["year_built"] = st.text_input("Year built")
-    home_fields["square_feet"] = st.text_input("Approximate square footage")
-    home_fields["roof_year"] = st.text_input("Roof year (approx.)")
-    home_fields["prior_claims"] = st.text_area(
-        "Any prior claims in last 5 years?"
+    home_fields["property_address"] = st.text_input(
+        "Property address (street, city, state, ZIP)"
+    )
+    home_fields["replacement_cost"] = st.text_input(
+        "Desired dwelling coverage / replacement cost ($)"
+    )
+
+elif quote_type == "Landlord":
+    st.subheader("Landlord (rental property) details")
+    landlord_fields["property_address"] = st.text_input(
+        "Rental property address (street, city, state, ZIP)"
+    )
+    landlord_fields["replacement_cost"] = st.text_input(
+        "Desired dwelling coverage / replacement cost ($)"
+    )
+    landlord_fields["occupancy"] = st.selectbox(
+        "Type of rental",
+        ["Single-family home", "Duplex", "Fourplex", "Apartment / other"],
+    )
+    landlord_fields["number_of_units"] = st.number_input(
+        "Number of units",
+        min_value=1,
+        max_value=50,
+        value=1,
+        step=1,
     )
 
 elif quote_type == "Renters":
     st.subheader("Renters details")
-    renters_fields["rental_address"] = st.text_input("Rental address")
+    renters_fields["rental_address"] = st.text_input(
+        "Rental address (street, city, state, ZIP)"
+    )
     renters_fields["contents_value"] = st.text_input(
         "Estimated personal property value ($)"
     )
-    renters_fields["prior_claims"] = st.text_area(
-        "Any prior claims in last 5 years?"
+
+elif quote_type == "Commercial":
+    st.subheader("Commercial insurance details")
+    commercial_fields["business_name"] = st.text_input("Business name")
+    commercial_fields["business_type"] = st.text_input(
+        "Type of business (what you do)"
+    )
+    commercial_fields["years_in_business"] = st.text_input("Years in business")
+    commercial_fields["annual_revenue"] = st.text_input(
+        "Approx. annual revenue ($)"
+    )
+    commercial_fields["location"] = st.text_input(
+        "Main business address (street, city, state, ZIP)"
+    )
+    commercial_fields["operations_desc"] = st.text_area(
+        "Brief description of your operations & what you need coverage for"
     )
 
 else:
@@ -175,26 +209,3 @@ if st.button("Submit quote request"):
             st.write("#### Vehicles")
             for idx, v in enumerate(auto_vehicles, start=1):
                 st.write(
-                    f"- **Vehicle {idx}:** {v.get('year','')} {v.get('make','')} {v.get('model','')} "
-                    f"(VIN: {v.get('vin','')}) – Coverages: {v.get('coverages_desired','')}"
-                )
-
-            st.write(f"**Garaging location:** {garaging_location}")
-            st.write(f"**Current insurer:** {current_insurer}")
-
-        elif quote_type == "Home":
-            st.write("#### Home details")
-            for label, value in home_fields.items():
-                st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
-
-        elif quote_type == "Renters":
-            st.write("#### Renters details")
-            for label, value in renters_fields.items():
-                st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
-
-        else:
-            st.write("#### Other coverage needs")
-            st.write(other_needs)
-
-        st.write("**Notes:**")
-        st.write(notes)
