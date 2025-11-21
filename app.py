@@ -1,10 +1,82 @@
 import streamlit as st
+import datetime as dt
+import pandas as pd
+import json
 
 st.set_page_config(page_title="Insurance Quote Request", layout="centered")
 
-import streamlit as st
+# ---------- GOOGLE SHEETS CONFIG ----------
+GOOGLE_SHEET_NAME = "Insurance_Quote_Leads"
 
-st.set_page_config(page_title="Insurance Quote Request", layout="centered")
+
+@st.cache_resource
+def get_gsheet_client():
+    """Create an authorized gspread client using a service account stored in Streamlit secrets."""
+    try:
+        creds_json_str = st.secrets["gcp_service_account"]
+    except KeyError:
+        # Secrets not set yet
+        st.warning(
+            "Google Sheets is not configured yet (missing gcp_service_account in secrets). "
+            "Submissions will not be saved until this is set up."
+        )
+        return None
+
+    import gspread
+    from google.oauth2.service_account import Credentials
+
+    creds_dict = json.loads(creds_json_str)
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(credentials)
+    return client
+
+
+def append_submission_to_sheet(submission: dict):
+    """Append one submission as a row in the Google Sheet."""
+    client = get_gsheet_client()
+    if client is None:
+        return
+
+    try:
+        sheet = client.open(GOOGLE_SHEET_NAME).sheet1
+    except Exception:
+        # If the sheet doesn't exist yet, create it and add header row
+        sh = client.create(GOOGLE_SHEET_NAME)
+        sheet = sh.sheet1
+        sheet.append_row(list(submission.keys()))
+
+    # Ensure header exists
+    existing_headers = sheet.row_values(1)
+    if not existing_headers:
+        sheet.append_row(list(submission.keys()))
+        existing_headers = sheet.row_values(1)
+
+    # Order row according to existing headers
+    row = [submission.get(col, "") for col in existing_headers]
+    sheet.append_row(row)
+
+
+def load_all_submissions() -> pd.DataFrame:
+    """Load all submissions from Google Sheets into a DataFrame."""
+    client = get_gsheet_client()
+    if client is None:
+        return pd.DataFrame()
+
+    try:
+        sheet = client.open(GOOGLE_SHEET_NAME).sheet1
+        data = sheet.get_all_records()
+    except Exception as e:
+        st.error(f"Error loading submissions from Google Sheets: {e}")
+        return pd.DataFrame()
+
+    if not data:
+        return pd.DataFrame()
+    return pd.DataFrame(data)
+
 
 # ---------- BASIC STYLING (colors: red, black, gray) ----------
 st.markdown(
@@ -19,11 +91,10 @@ st.markdown(
         background-color: #ffffff !important;
     }
 
-    /* Make Streamlit selectboxes white too (without weird white line) */
+    /* Make Streamlit selectboxes white too */
     div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
     }
-
 
     /* Top header card */
     .rose-header {
@@ -52,12 +123,12 @@ st.markdown(
         text-decoration: underline;
     }
 
-    /* Section wrapper - now transparent, no white box or red bar */
+    /* Section wrapper - transparent, just for spacing */
     .section-card {
-        background-color: transparent;  /* no white box */
-        padding: 0;                     /* let Streamlit handle spacing */
+        background-color: transparent;
+        padding: 0;
         border-radius: 0;
-        border-left: none;              /* remove red left border */
+        border-left: none;
         margin-bottom: 1rem;
         box-shadow: none;
     }
@@ -297,60 +368,111 @@ with st.container():
     notes = st.text_area("Anything else I should know?")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ---------- SUBMIT BUTTON & SUMMARY ----------
+# ---------- SUBMIT BUTTON & SAVE ----------
 if st.button("Submit quote request"):
     if not name or not email or not phone:
         st.error("Please fill in your name, email, and phone.")
     else:
-        st.success("Thanks! Your quote request has been submitted. I'll follow up soon.")
-
-        st.write("### Summary of what you entered:")
-        st.write(f"**Type of quote:** {quote_type}")
-        st.write(f"**Name:** {name}")
-        st.write(f"**Email:** {email}")
-        st.write(f"**Phone:** {phone}")
-        st.write(f"**Preferred contact:** {preferred_contact}")
+        # Build a plain-text summary for storage + display
+        lines = [
+            f"Type of quote: {quote_type}",
+            f"Name: {name}",
+            f"Email: {email}",
+            f"Phone: {phone}",
+            f"Preferred contact: {preferred_contact}",
+        ]
 
         if quote_type == "Auto":
-            st.write("#### Drivers")
+            lines.append("DRIVERS:")
             for idx, d in enumerate(auto_drivers, start=1):
-                st.write(
-                    f"- **Driver {idx}:** {d.get('name','')} | DOB: {d.get('dob','')} | DL: {d.get('license_number','')}"
+                lines.append(
+                    f"  Driver {idx}: {d.get('name','')} | DOB: {d.get('dob','')} | DL: {d.get('license_number','')}"
                 )
 
-            st.write("#### Vehicles")
+            lines.append("VEHICLES:")
             for idx, v in enumerate(auto_vehicles, start=1):
-                st.write(
-                    f"- **Vehicle {idx}:** {v.get('year','')} {v.get('make','')} {v.get('model','')} "
+                lines.append(
+                    f"  Vehicle {idx}: {v.get('year','')} {v.get('make','')} {v.get('model','')} "
                     f"(VIN: {v.get('vin','')}) – Coverages: {v.get('coverages_desired','')}"
                 )
 
-            st.write(f"**Garaging address:** {garaging_location}")
-            st.write(f"**Current insurer:** {current_insurer}")
+            lines.append(f"Garaging address: {garaging_location}")
+            lines.append(f"Current insurer: {current_insurer}")
 
         elif quote_type == "Home":
-            st.write("#### Home details")
+            lines.append("HOME DETAILS:")
             for label, value in home_fields.items():
-                st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
+                lines.append(f"  {label.replace('_', ' ').title()}: {value}")
 
         elif quote_type == "Landlord":
-            st.write("#### Landlord details")
+            lines.append("LANDLORD DETAILS:")
             for label, value in landlord_fields.items():
-                st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
+                lines.append(f"  {label.replace('_', ' ').title()}: {value}")
 
         elif quote_type == "Renters":
-            st.write("#### Renters details")
+            lines.append("RENTERS DETAILS:")
             for label, value in renters_fields.items():
-                st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
+                lines.append(f"  {label.replace('_', ' ').title()}: {value}")
 
         elif quote_type == "Commercial":
-            st.write("#### Commercial details")
+            lines.append("COMMERCIAL DETAILS:")
             for label, value in commercial_fields.items():
-                st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
+                lines.append(f"  {label.replace('_', ' ').title()}: {value}")
 
         else:
-            st.write("#### Other coverage needs")
-            st.write(other_needs)
+            lines.append("OTHER COVERAGE NEEDS:")
+            lines.append(other_needs)
 
-        st.write("**Notes:**")
-        st.write(notes)
+        if notes:
+            lines.append("Notes:")
+            lines.append(notes)
+
+        details_text = "\n".join(lines)
+
+        # Show confirmation and summary
+        st.success("Thanks! Your quote request has been submitted. I'll follow up soon.")
+        st.write("### Summary of what you entered:")
+        st.text(details_text)
+
+        # Build submission dict for Google Sheets
+        submission = {
+            "timestamp": dt.datetime.now().isoformat(timespec="seconds"),
+            "quote_type": quote_type,
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "preferred_contact": preferred_contact,
+            "details": details_text,
+        }
+
+        try:
+            append_submission_to_sheet(submission)
+        except Exception as e:
+            st.error(f"There was an issue saving your request to Google Sheets: {e}")
+
+# ---------- ADMIN VIEW ----------
+st.sidebar.markdown("---")
+show_admin = st.sidebar.checkbox("Admin view")
+
+if show_admin:
+    st.header("Admin – Quote Requests")
+
+    admin_pw = st.text_input("Admin password", type="password")
+    if st.button("Log in as admin"):
+        if "ADMIN_PASSWORD" not in st.secrets:
+            st.error("ADMIN_PASSWORD is not set in Streamlit secrets.")
+        elif admin_pw != st.secrets["ADMIN_PASSWORD"]:
+            st.error("Incorrect password.")
+        else:
+            st.session_state["admin_logged_in"] = True
+
+if st.session_state.get("admin_logged_in"):
+    st.success("Admin access granted.")
+
+    df = load_all_submissions()
+    if df.empty:
+        st.info("No submissions found yet.")
+    else:
+        df_sorted = df.sort_values("timestamp", ascending=False)
+        st.dataframe(df_sorted, use_container_width=True)
+)
