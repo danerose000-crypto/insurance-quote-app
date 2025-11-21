@@ -2,6 +2,10 @@ import streamlit as st
 
 st.set_page_config(page_title="Insurance Quote Request", layout="centered")
 
+import streamlit as st
+
+st.set_page_config(page_title="Insurance Quote Request", layout="centered")
+
 st.title("Rose Insurance – Quote Request")
 st.write("Fill this out and I'll shop your insurance options and follow up with you.")
 
@@ -209,3 +213,36 @@ if st.button("Submit quote request"):
             st.write("#### Vehicles")
             for idx, v in enumerate(auto_vehicles, start=1):
                 st.write(
+                    f"- **Vehicle {idx}:** {v.get('year','')} {v.get('make','')} {v.get('model','')} "
+                    f"(VIN: {v.get('vin','')}) – Coverages: {v.get('coverages_desired','')}"
+                )
+
+            st.write(f"**Garaging address:** {garaging_location}")
+            st.write(f"**Current insurer:** {current_insurer}")
+
+        elif quote_type == "Home":
+            st.write("#### Home details")
+            for label, value in home_fields.items():
+                st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
+
+        elif quote_type == "Landlord":
+            st.write("#### Landlord details")
+            for label, value in landlord_fields.items():
+                st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
+
+        elif quote_type == "Renters":
+            st.write("#### Renters details")
+            for label, value in renters_fields.items():
+                st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
+
+        elif quote_type == "Commercial":
+            st.write("#### Commercial details")
+            for label, value in commercial_fields.items():
+                st.write(f"- **{label.replace('_', ' ').title()}:** {value}")
+
+        else:
+            st.write("#### Other coverage needs")
+            st.write(other_needs)
+
+        st.write("**Notes:**")
+        st.write(notes)
