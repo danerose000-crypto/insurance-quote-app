@@ -458,6 +458,3 @@ if st.session_state.get("admin_logged_in"):
     else:
         df_sorted = df.sort_values("timestamp", ascending=False)
         st.dataframe(df_sorted, use_container_width=True)
-
-        st.dataframe(df_sorted, use_container_width=True)
-)
