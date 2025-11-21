@@ -6,7 +6,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Insurance Quote Request", layout="centered")
 
-st.title("Rose Insurance – Quote Request")
+st.title("Dane Rose Insurance – Quote Request")
 st.write("Fill this out and I'll shop your insurance options and follow up with you.")
 
 # --- Quote type selection ---
