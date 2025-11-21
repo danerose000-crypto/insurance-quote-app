@@ -5,17 +5,15 @@ import json
 
 st.set_page_config(page_title="Insurance Quote Request", layout="centered")
 
-# ---------- GOOGLE SHEETS CONFIG ----------
 GOOGLE_SHEET_NAME = "Insurance_Quote_Leads"
 
 
 @st.cache_resource
 def get_gsheet_client():
-    """Create an authorized gspread client using a service account stored in Streamlit secrets."""
+    """Create a Google Sheets client using service-account credentials in Streamlit secrets."""
     try:
         creds_json_str = st.secrets["gcp_service_account"]
     except KeyError:
-        # Secrets not set yet
         st.warning(
             "Google Sheets is not configured yet (missing gcp_service_account in secrets). "
             "Submissions will not be saved until this is set up."
@@ -83,20 +81,14 @@ st.markdown(
     """
     <style>
     .stApp {
-        background-color: #f4f4f4; /* light gray background */
+        background-color: #f4f4f4;
     }
-
-    /* Make text fields white so they pop against the gray */
     input, textarea {
         background-color: #ffffff !important;
     }
-
-    /* Make Streamlit selectboxes white too */
     div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
     }
-
-    /* Top header card */
     .rose-header {
         background: linear-gradient(90deg, #111111, #2b2b2b);
         padding: 1.25rem 1.75rem;
@@ -115,15 +107,13 @@ st.markdown(
         font-size: 0.95rem;
     }
     .rose-header a {
-        color: #ff4b4b; /* red accent */
+        color: #ff4b4b;
         text-decoration: none;
         font-weight: 600;
     }
     .rose-header a:hover {
         text-decoration: underline;
     }
-
-    /* Section wrapper - transparent, just for spacing */
     .section-card {
         background-color: transparent;
         padding: 0;
@@ -132,8 +122,6 @@ st.markdown(
         margin-bottom: 1rem;
         box-shadow: none;
     }
-
-    /* Make subheaders a bit darker */
     .stMarkdown h3, .stMarkdown h4 {
         color: #222222;
     }
@@ -203,7 +191,6 @@ if quote_type == "Auto":
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("Auto details")
 
-        # Number of drivers
         num_drivers = st.number_input(
             "How many drivers will be on this policy?",
             min_value=1,
@@ -237,7 +224,6 @@ if quote_type == "Auto":
                 }
             )
 
-        # Number of vehicles
         st.markdown("#### Vehicle information")
         num_vehicles = st.number_input(
             "How many vehicles will be on this policy?",
@@ -373,7 +359,6 @@ if st.button("Submit quote request"):
     if not name or not email or not phone:
         st.error("Please fill in your name, email, and phone.")
     else:
-        # Build a plain-text summary for storage + display
         lines = [
             f"Type of quote: {quote_type}",
             f"Name: {name}",
@@ -429,12 +414,10 @@ if st.button("Submit quote request"):
 
         details_text = "\n".join(lines)
 
-        # Show confirmation and summary
         st.success("Thanks! Your quote request has been submitted. I'll follow up soon.")
         st.write("### Summary of what you entered:")
         st.text(details_text)
 
-        # Build submission dict for Google Sheets
         submission = {
             "timestamp": dt.datetime.now().isoformat(timespec="seconds"),
             "quote_type": quote_type,
@@ -474,5 +457,7 @@ if st.session_state.get("admin_logged_in"):
         st.info("No submissions found yet.")
     else:
         df_sorted = df.sort_values("timestamp", ascending=False)
+        st.dataframe(df_sorted, use_container_width=True)
+
         st.dataframe(df_sorted, use_container_width=True)
 )
