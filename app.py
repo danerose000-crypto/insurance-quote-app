@@ -6,26 +6,109 @@ import streamlit as st
 
 st.set_page_config(page_title="Insurance Quote Request", layout="centered")
 
-st.title("Dane Rose Insurance – Quote Request")
+# ---------- BASIC STYLING (colors: red, black, gray) ----------
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #f4f4f4; /* light gray */
+    }
+
+    /* Top header card */
+    .rose-header {
+        background: linear-gradient(90deg, #111111, #2b2b2b);
+        padding: 1.25rem 1.75rem;
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #333333;
+    }
+    .rose-header h1 {
+        color: #ffffff;
+        margin: 0 0 0.3rem 0;
+        font-size: 1.75rem;
+    }
+    .rose-header p {
+        color: #cccccc;
+        margin: 0.1rem 0;
+        font-size: 0.95rem;
+    }
+    .rose-header a {
+        color: #ff4b4b; /* red accent */
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .rose-header a:hover {
+        text-decoration: underline;
+    }
+
+    /* Section card styling */
+    .section-card {
+        background-color: #ffffff;
+        padding: 1rem 1.25rem;
+        border-radius: 0.75rem;
+        border-left: 4px solid #ff4b4b; /* red left border */
+        margin-bottom: 1.25rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .section-card h2 {
+        margin-top: 0;
+        color: #111111;
+        font-size: 1.2rem;
+    }
+
+    /* Make subheaders a bit darker */
+    .stMarkdown h3, .stMarkdown h4 {
+        color: #222222;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------- HEADER WITH YOUR CONTACT INFO ----------
+st.markdown(
+    """
+    <div class="rose-header">
+        <h1>Rose Insurance – Online Quote Request</h1>
+        <p>Questions or prefer to talk it through?</p>
+        <p>
+            Email:
+            <a href="mailto:Roseinserv@gmail.com">Roseinserv@gmail.com</a>
+            &nbsp;|&nbsp;
+            Call / Text:
+            <a href="tel:17023032170">(702) 303-2170</a>
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.write("Fill this out and I'll shop your insurance options and follow up with you.")
 
-# --- Quote type selection ---
-quote_type = st.selectbox(
-    "What do you want a quote for?",
-    ["Auto", "Home", "Landlord", "Renters", "Commercial", "Other"],
-)
+# ---------- QUOTE TYPE SELECTION ----------
+with st.container():
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    quote_type = st.selectbox(
+        "What do you want a quote for?",
+        ["Auto", "Home", "Landlord", "Renters", "Commercial", "Other"],
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Contact info ---
-st.subheader("Contact information")
-name = st.text_input("Full name*")
-email = st.text_input("Email*")
-phone = st.text_input("Phone*")
-preferred_contact = st.selectbox(
-    "Preferred contact method",
-    ["Phone", "Email", "Text"],
-)
+# ---------- CONTACT INFO ----------
+with st.container():
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.subheader("Contact information")
+    name = st.text_input("Full name*")
+    email = st.text_input("Email*")
+    phone = st.text_input("Phone*")
+    preferred_contact = st.selectbox(
+        "Preferred contact method",
+        ["Phone", "Email", "Text"],
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Prepare vars so they exist even if not used ---
+# Prepare vars so they exist
 auto_drivers = []
 auto_vehicles = []
 garaging_location = ""
@@ -37,165 +120,185 @@ renters_fields = {}
 commercial_fields = {}
 other_needs = ""
 
-# --- Dynamic questions based on quote type ---
+# ---------- DYNAMIC SECTIONS BY QUOTE TYPE ----------
 
 if quote_type == "Auto":
-    st.subheader("Auto details")
+    with st.container():
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.subheader("Auto details")
 
-    # Number of drivers
-    num_drivers = st.number_input(
-        "How many drivers will be on this policy?",
-        min_value=1,
-        max_value=10,
-        value=1,
-        step=1,
-    )
-
-    st.markdown("#### Driver information")
-    auto_drivers = []
-    for i in range(int(num_drivers)):
-        st.markdown(f"**Driver {i+1}**")
-        d_name = st.text_input(
-            f"Full name (Driver {i+1})",
-            key=f"driver_{i+1}_name",
-        )
-        d_dob = st.text_input(
-            f"Date of birth (Driver {i+1})",
-            key=f"driver_{i+1}_dob",
-            placeholder="MM/DD/YYYY",
-        )
-        d_dl = st.text_input(
-            f"Driver's license number (Driver {i+1})",
-            key=f"driver_{i+1}_dl",
-        )
-        auto_drivers.append(
-            {
-                "name": d_name,
-                "dob": d_dob,
-                "license_number": d_dl,
-            }
+        # Number of drivers
+        num_drivers = st.number_input(
+            "How many drivers will be on this policy?",
+            min_value=1,
+            max_value=10,
+            value=1,
+            step=1,
         )
 
-    # Number of vehicles
-    st.markdown("#### Vehicle information")
-    num_vehicles = st.number_input(
-        "How many vehicles will be on this policy?",
-        min_value=1,
-        max_value=10,
-        value=1,
-        step=1,
-    )
+        st.markdown("#### Driver information")
+        auto_drivers = []
+        for i in range(int(num_drivers)):
+            st.markdown(f"**Driver {i+1}**")
+            d_name = st.text_input(
+                f"Full name (Driver {i+1})",
+                key=f"driver_{i+1}_name",
+            )
+            d_dob = st.text_input(
+                f"Date of birth (Driver {i+1})",
+                key=f"driver_{i+1}_dob",
+                placeholder="MM/DD/YYYY",
+            )
+            d_dl = st.text_input(
+                f"Driver's license number (Driver {i+1})",
+                key=f"driver_{i+1}_dl",
+            )
+            auto_drivers.append(
+                {
+                    "name": d_name,
+                    "dob": d_dob,
+                    "license_number": d_dl,
+                }
+            )
 
-    auto_vehicles = []
-    for i in range(int(num_vehicles)):
-        st.markdown(f"**Vehicle {i+1}**")
-        v_year = st.text_input(
-            f"Year (Vehicle {i+1})",
-            key=f"vehicle_{i+1}_year",
-        )
-        v_make = st.text_input(
-            f"Make (Vehicle {i+1})",
-            key=f"vehicle_{i+1}_make",
-        )
-        v_model = st.text_input(
-            f"Model (Vehicle {i+1})",
-            key=f"vehicle_{i+1}_model",
-        )
-        v_vin = st.text_input(
-            f"VIN (Vehicle {i+1})",
-            key=f"vehicle_{i+1}_vin",
-        )
-        v_cov = st.text_area(
-            f"Coverages desired for Vehicle {i+1}",
-            key=f"vehicle_{i+1}_cov",
-        )
-        auto_vehicles.append(
-            {
-                "year": v_year,
-                "make": v_make,
-                "model": v_model,
-                "vin": v_vin,
-                "coverages_desired": v_cov,
-            }
+        # Number of vehicles
+        st.markdown("#### Vehicle information")
+        num_vehicles = st.number_input(
+            "How many vehicles will be on this policy?",
+            min_value=1,
+            max_value=10,
+            value=1,
+            step=1,
         )
 
-    garaging_location = st.text_input(
-        "Garaging address (street, city, state, ZIP)"
-    )
-    current_insurer = st.text_input("Current insurance company (if any)")
+        auto_vehicles = []
+        for i in range(int(num_vehicles)):
+            st.markdown(f"**Vehicle {i+1}**")
+            v_year = st.text_input(
+                f"Year (Vehicle {i+1})",
+                key=f"vehicle_{i+1}_year",
+            )
+            v_make = st.text_input(
+                f"Make (Vehicle {i+1})",
+                key=f"vehicle_{i+1}_make",
+            )
+            v_model = st.text_input(
+                f"Model (Vehicle {i+1})",
+                key=f"vehicle_{i+1}_model",
+            )
+            v_vin = st.text_input(
+                f"VIN (Vehicle {i+1})",
+                key=f"vehicle_{i+1}_vin",
+            )
+            v_cov = st.text_area(
+                f"Coverages desired for Vehicle {i+1}",
+                key=f"vehicle_{i+1}_cov",
+            )
+            auto_vehicles.append(
+                {
+                    "year": v_year,
+                    "make": v_make,
+                    "model": v_model,
+                    "vin": v_vin,
+                    "coverages_desired": v_cov,
+                }
+            )
+
+        garaging_location = st.text_input(
+            "Garaging address (street, city, state, ZIP)"
+        )
+        current_insurer = st.text_input("Current insurance company (if any)")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 elif quote_type == "Home":
-    st.subheader("Home details")
-    home_fields["property_address"] = st.text_input(
-        "Property address (street, city, state, ZIP)"
-    )
-    home_fields["replacement_cost"] = st.text_input(
-        "Desired dwelling coverage / replacement cost ($)"
-    )
+    with st.container():
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.subheader("Home details")
+        home_fields["property_address"] = st.text_input(
+            "Property address (street, city, state, ZIP)"
+        )
+        home_fields["replacement_cost"] = st.text_input(
+            "Desired dwelling coverage / replacement cost ($)"
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
 elif quote_type == "Landlord":
-    st.subheader("Landlord (rental property) details")
-    landlord_fields["property_address"] = st.text_input(
-        "Rental property address (street, city, state, ZIP)"
-    )
-    landlord_fields["replacement_cost"] = st.text_input(
-        "Desired dwelling coverage / replacement cost ($)"
-    )
-    landlord_fields["occupancy"] = st.selectbox(
-        "Type of rental",
-        ["Single-family home", "Duplex", "Fourplex", "Apartment / other"],
-    )
-    landlord_fields["number_of_units"] = st.number_input(
-        "Number of units",
-        min_value=1,
-        max_value=50,
-        value=1,
-        step=1,
-    )
+    with st.container():
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.subheader("Landlord (rental property) details")
+        landlord_fields["property_address"] = st.text_input(
+            "Rental property address (street, city, state, ZIP)"
+        )
+        landlord_fields["replacement_cost"] = st.text_input(
+            "Desired dwelling coverage / replacement cost ($)"
+        )
+        landlord_fields["occupancy"] = st.selectbox(
+            "Type of rental",
+            ["Single-family home", "Duplex", "Fourplex", "Apartment / other"],
+        )
+        landlord_fields["number_of_units"] = st.number_input(
+            "Number of units",
+            min_value=1,
+            max_value=50,
+            value=1,
+            step=1,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
 elif quote_type == "Renters":
-    st.subheader("Renters details")
-    renters_fields["rental_address"] = st.text_input(
-        "Rental address (street, city, state, ZIP)"
-    )
-    renters_fields["contents_value"] = st.text_input(
-        "Estimated personal property value ($)"
-    )
+    with st.container():
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.subheader("Renters details")
+        renters_fields["rental_address"] = st.text_input(
+            "Rental address (street, city, state, ZIP)"
+        )
+        renters_fields["contents_value"] = st.text_input(
+            "Estimated personal property value ($)"
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
 elif quote_type == "Commercial":
-    st.subheader("Commercial insurance details")
-    commercial_fields["business_name"] = st.text_input("Business name")
-    commercial_fields["business_type"] = st.text_input(
-        "Type of business (what you do)"
-    )
-    commercial_fields["years_in_business"] = st.text_input("Years in business")
-    commercial_fields["annual_revenue"] = st.text_input(
-        "Approx. annual revenue ($)"
-    )
-    commercial_fields["location"] = st.text_input(
-        "Main business address (street, city, state, ZIP)"
-    )
-    commercial_fields["operations_desc"] = st.text_area(
-        "Brief description of your operations & what you need coverage for"
-    )
+    with st.container():
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.subheader("Commercial insurance details")
+        commercial_fields["business_name"] = st.text_input("Business name")
+        commercial_fields["business_type"] = st.text_input(
+            "Type of business (what you do)"
+        )
+        commercial_fields["years_in_business"] = st.text_input("Years in business")
+        commercial_fields["annual_revenue"] = st.text_input(
+            "Approx. annual revenue ($)"
+        )
+        commercial_fields["location"] = st.text_input(
+            "Main business address (street, city, state, ZIP)"
+        )
+        commercial_fields["operations_desc"] = st.text_area(
+            "Brief description of your operations & what you need coverage for"
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
 else:
-    st.subheader("Describe what you need")
-    other_needs = st.text_area(
-        "Tell me what type of coverage you're looking for."
-    )
+    with st.container():
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.subheader("Describe what you need")
+        other_needs = st.text_area(
+            "Tell me what type of coverage you're looking for."
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Extra notes ---
-notes = st.text_area("Anything else I should know?")
+# ---------- EXTRA NOTES ----------
+with st.container():
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    notes = st.text_area("Anything else I should know?")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Submit button ---
+# ---------- SUBMIT BUTTON & SUMMARY ----------
 if st.button("Submit quote request"):
     if not name or not email or not phone:
         st.error("Please fill in your name, email, and phone.")
     else:
         st.success("Thanks! Your quote request has been submitted. I'll follow up soon.")
 
-        # For now, just show back the info (later we'll save it to a sheet)
         st.write("### Summary of what you entered:")
         st.write(f"**Type of quote:** {quote_type}")
         st.write(f"**Name:** {name}")
