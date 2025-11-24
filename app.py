@@ -47,7 +47,8 @@ def append_submission_to_sheet(submission: dict):
         # Open the sheet directly by its ID
         sheet = client.open_by_key(SHEET_ID).sheet1
     except Exception as e:
-        st.error(f"Error opening Google Sheet: {e}")
+               st.error(f"Error opening Google Sheet: {repr(e)}")
+
         return
 
     # Ensure header row exists
@@ -71,7 +72,8 @@ def load_all_submissions() -> pd.DataFrame:
         sheet = client.open_by_key(SHEET_ID).sheet1
         data = sheet.get_all_records()
     except Exception as e:
-        st.error(f"Error loading submissions from Google Sheets: {e}")
+                st.error(f"Error loading submissions from Google Sheets: {repr(e)}")
+
         return pd.DataFrame()
 
     if not data:
