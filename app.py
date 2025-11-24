@@ -91,13 +91,16 @@ st.markdown(
     """
     <style>
     .stApp {
-        background-color: #f4f4f4;
+        background-color: #303030;  /* darker gray */
+        color: #f5f5f5;             /* light text on dark bg */
     }
     input, textarea {
         background-color: #ffffff !important;
+        color: #000000 !important;
     }
     div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
+        color: #000000 !important;
     }
     .rose-header {
         background: linear-gradient(90deg, #111111, #2b2b2b);
@@ -133,12 +136,13 @@ st.markdown(
         box-shadow: none;
     }
     .stMarkdown h3, .stMarkdown h4 {
-        color: #222222;
+        color: #f5f5f5;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
 
 # ---------- HEADER WITH YOUR CONTACT INFO ----------
 st.markdown(
