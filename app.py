@@ -1,8 +1,80 @@
 import streamlit as st
 import datetime as dt
 import pandas as pd
+import json
 
 st.set_page_config(page_title="Insurance Quote Request", layout="centered")
+
+GOOGLE_SHEET_NAME = "Insurance_Quote_Leads"
+
+
+@st.cache_resource
+def get_gsheet_client():
+    """Create a Google Sheets client using service-account credentials in Streamlit secrets."""
+    try:
+        creds_json_str = st.secrets["gcp_service_account"]
+    except KeyError:
+        st.warning(
+            "Google Sheets is not configured yet (missing gcp_service_account in secrets). "
+            "Submissions will not be saved until this is set up."
+        )
+        return None
+
+    import gspread
+    from google.oauth2.service_account import Credentials
+
+    creds_dict = json.loads(creds_json_str)
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(credentials)
+    return client
+
+
+def append_submission_to_sheet(submission: dict):
+    """Append one submission as a row in the Google Sheet."""
+    client = get_gsheet_client()
+    if client is None:
+        return
+
+    try:
+        sheet = client.open(GOOGLE_SHEET_NAME).sheet1
+    except Exception:
+        # If the sheet doesn't exist yet, create it and add header row
+        sh = client.create(GOOGLE_SHEET_NAME)
+        sheet = sh.sheet1
+        sheet.append_row(list(submission.keys()))
+
+    # Ensure header exists
+    existing_headers = sheet.row_values(1)
+    if not existing_headers:
+        sheet.append_row(list(submission.keys()))
+        existing_headers = sheet.row_values(1)
+
+    # Order row according to existing headers
+    row = [submission.get(col, "") for col in existing_headers]
+    sheet.append_row(row)
+
+
+def load_all_submissions() -> pd.DataFrame:
+    """Load all submissions from Google Sheets into a DataFrame."""
+    client = get_gsheet_client()
+    if client is None:
+        return pd.DataFrame()
+
+    try:
+        sheet = client.open(GOOGLE_SHEET_NAME).sheet1
+        data = sheet.get_all_records()
+    except Exception as e:
+        st.error(f"Error loading submissions from Google Sheets: {e}")
+        return pd.DataFrame()
+
+    if not data:
+        return pd.DataFrame()
+    return pd.DataFrame(data)
+
 
 # ---------- BASIC STYLING (colors: red, black, gray) ----------
 st.markdown(
@@ -282,10 +354,6 @@ with st.container():
     notes = st.text_area("Anything else I should know?")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ---------- INIT IN-MEMORY STORAGE ----------
-if "submissions" not in st.session_state:
-    st.session_state["submissions"] = []
-
 # ---------- SUBMIT BUTTON & SAVE ----------
 if st.button("Submit quote request"):
     if not name or not email or not phone:
@@ -360,7 +428,10 @@ if st.button("Submit quote request"):
             "details": details_text,
         }
 
-        st.session_state["submissions"].append(submission)
+        try:
+            append_submission_to_sheet(submission)
+        except Exception as e:
+            st.error(f"There was an issue saving your request to Google Sheets: {e}")
 
 # ---------- ADMIN VIEW ----------
 st.sidebar.markdown("---")
@@ -371,7 +442,6 @@ if show_admin:
 
     admin_pw = st.text_input("Admin password", type="password")
     if st.button("Log in as admin"):
-        # ADMIN_PASSWORD will come from secrets; if not set, default to 'roseadmin123'
         real_pw = st.secrets.get("ADMIN_PASSWORD", "roseadmin123")
         if admin_pw != real_pw:
             st.error("Incorrect password.")
@@ -381,10 +451,9 @@ if show_admin:
 if st.session_state.get("admin_logged_in"):
     st.success("Admin access granted.")
 
-    submissions = st.session_state.get("submissions", [])
-    if not submissions:
+    df = load_all_submissions()
+    if df.empty:
         st.info("No submissions found yet.")
     else:
-        df = pd.DataFrame(submissions)
         df_sorted = df.sort_values("timestamp", ascending=False)
         st.dataframe(df_sorted, use_container_width=True)
