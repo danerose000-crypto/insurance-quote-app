@@ -5,8 +5,7 @@ import json
 
 st.set_page_config(page_title="Insurance Quote Request", layout="centered")
 
-# 🔴 IMPORTANT: put your real Google Sheet ID here (the one you copied)
-# It looks like a long string from the Sheets URL between /d/ and /edit
+# Google Sheet ID from your sheet URL
 SHEET_ID = "1og5tSQ2xSAt1iXADHrIIOm1ON48gwOjrxEnlF-k_XdI"
 
 
@@ -29,9 +28,7 @@ def get_gsheet_client():
     creds_dict = json.loads(creds_json_str, strict=False)
 
     # Only use the Sheets scope – no Drive storage
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-    ]
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
     credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     client = gspread.authorize(credentials)
     return client
@@ -47,18 +44,27 @@ def append_submission_to_sheet(submission: dict):
         # Open the sheet directly by its ID
         sheet = client.open_by_key(SHEET_ID).sheet1
     except Exception as e:
+        # show full repr so we can debug
         st.error(f"Error opening Google Sheet: {repr(e)}")
-
         return
 
-    # Ensure header row exists
+    # Ensure header row exists, and extend it with any new keys
     existing_headers = sheet.row_values(1)
     if not existing_headers:
-        sheet.append_row(list(submission.keys()))
-        existing_headers = sheet.row_values(1)
+        headers = list(submission.keys())
+        sheet.append_row(headers)
+        existing_headers = headers
+    else:
+        headers = existing_headers[:]
+        for key in submission.keys():
+            if key not in headers:
+                headers.append(key)
+        # If we added new headers, update the first row
+        if headers != existing_headers:
+            sheet.update("1:1", [headers])
 
-    # Order row according to existing headers
-    row = [submission.get(col, "") for col in existing_headers]
+    # Order row according to final headers list
+    row = [submission.get(col, "") for col in headers]
     sheet.append_row(row)
 
 
@@ -73,7 +79,6 @@ def load_all_submissions() -> pd.DataFrame:
         data = sheet.get_all_records()
     except Exception as e:
         st.error(f"Error loading submissions from Google Sheets: {repr(e)}")
-
         return pd.DataFrame()
 
     if not data:
@@ -117,7 +122,7 @@ st.markdown(
         font-weight: 600;
     }
     .rose-header a:hover {
-        text-decoration: underline.
+        text-decoration: underline;
     }
     .section-card {
         background-color: transparent;
@@ -169,8 +174,13 @@ with st.container():
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.subheader("Contact information")
     name = st.text_input("Full name*")
+    dob = st.text_input("Date of birth*", placeholder="MM/DD/YYYY")
     email = st.text_input("Email*")
     phone = st.text_input("Phone*")
+    effective_date = st.text_input(
+        "When do you need coverage to start?*",
+        placeholder="MM/DD/YYYY",
+    )
     preferred_contact = st.selectbox(
         "Preferred contact method",
         ["Phone", "Email", "Text"],
@@ -361,14 +371,16 @@ with st.container():
 
 # ---------- SUBMIT BUTTON & SAVE ----------
 if st.button("Submit quote request"):
-    if not name or not email or not phone:
-        st.error("Please fill in your name, email, and phone.")
+    if not name or not email or not phone or not dob or not effective_date:
+        st.error("Please fill in your name, date of birth, effective date, email, and phone.")
     else:
         lines = [
             f"Type of quote: {quote_type}",
             f"Name: {name}",
+            f"Date of birth: {dob}",
             f"Email: {email}",
             f"Phone: {phone}",
+            f"Effective date: {effective_date}",
             f"Preferred contact: {preferred_contact}",
         ]
 
@@ -427,8 +439,10 @@ if st.button("Submit quote request"):
             "timestamp": dt.datetime.now().isoformat(timespec="seconds"),
             "quote_type": quote_type,
             "name": name,
+            "date_of_birth": dob,
             "email": email,
             "phone": phone,
+            "effective_date": effective_date,
             "preferred_contact": preferred_contact,
             "details": details_text,
         }
@@ -436,7 +450,9 @@ if st.button("Submit quote request"):
         try:
             append_submission_to_sheet(submission)
         except Exception as e:
-            st.error(f"There was an issue saving your request to Google Sheets: {e}")
+            st.error(
+                f"There was an issue saving your request to Google Sheets: {repr(e)}"
+            )
 
 # ---------- ADMIN VIEW ----------
 st.sidebar.markdown("---")
