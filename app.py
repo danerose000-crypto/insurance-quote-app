@@ -23,7 +23,7 @@ def get_gsheet_client():
     import gspread
     from google.oauth2.service_account import Credentials
 
-    creds_dict = json.loads(creds_json_str)
+    creds_dict = json.loads(creds_json_str, strict=False)
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
