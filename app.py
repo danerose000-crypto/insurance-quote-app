@@ -455,26 +455,32 @@ if st.button("Submit quote request"):
             )
 
 # ---------- ADMIN VIEW ----------
-st.sidebar.markdown("---")
-show_admin = st.sidebar.checkbox("Admin view")
+# ---------- ADMIN VIEW (HIDDEN BY DEFAULT) ----------
+# Only show admin controls if the URL has ?admin=1
+params = st.experimental_get_query_params()
+admin_mode = params.get("admin", ["0"])[0] == "1"
 
-if show_admin:
-    st.header("Admin – Quote Requests")
+if admin_mode:
+    st.sidebar.markdown("---")
+    show_admin = st.sidebar.checkbox("Admin view")
 
-    admin_pw = st.text_input("Admin password", type="password")
-    if st.button("Log in as admin"):
-        real_pw = st.secrets.get("ADMIN_PASSWORD", "roseadmin123")
-        if admin_pw != real_pw:
-            st.error("Incorrect password.")
+    if show_admin:
+        st.header("Admin – Quote Requests")
+
+        admin_pw = st.text_input("Admin password", type="password")
+        if st.button("Log in as admin"):
+            real_pw = st.secrets.get("ADMIN_PASSWORD", "roseadmin123")
+            if admin_pw != real_pw:
+                st.error("Incorrect password.")
+            else:
+                st.session_state["admin_logged_in"] = True
+
+    if st.session_state.get("admin_logged_in"):
+        st.success("Admin access granted.")
+
+        df = load_all_submissions()
+        if df.empty:
+            st.info("No submissions found yet.")
         else:
-            st.session_state["admin_logged_in"] = True
-
-if st.session_state.get("admin_logged_in"):
-    st.success("Admin access granted.")
-
-    df = load_all_submissions()
-    if df.empty:
-        st.info("No submissions found yet.")
-    else:
-        df_sorted = df.sort_values("timestamp", ascending=False)
-        st.dataframe(df_sorted, use_container_width=True)
+            df_sorted = df.sort_values("timestamp", ascending=False)
+            st.dataframe(df_sorted, use_container_width=True)
