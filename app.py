@@ -90,9 +90,10 @@ def load_all_submissions() -> pd.DataFrame:
 st.markdown(
     """
     <style>
+    /* Default (light mode) */
     .stApp {
-        background-color: #303030;  /* darker gray */
-        color: #f5f5f5;             /* light text on dark bg */
+        background-color: #f4f4f4;
+        color: #222222;
     }
     input, textarea {
         background-color: #ffffff !important;
@@ -136,7 +137,21 @@ st.markdown(
         box-shadow: none;
     }
     .stMarkdown h3, .stMarkdown h4 {
-        color: #f5f5f5;
+        color: #222222;
+    }
+
+    /* Dark-mode override (for phones/computers in dark mode) */
+    @media (prefers-color-scheme: dark) {
+        .stApp {
+            background-color: #303030;
+            color: #f5f5f5;
+        }
+        .stMarkdown h3, .stMarkdown h4 {
+            color: #f5f5f5;
+        }
+        label {
+            color: #f5f5f5 !important;  /* makes "What do you want a quote for?" visible */
+        }
     }
     </style>
     """,
