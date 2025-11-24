@@ -5,7 +5,9 @@ import json
 
 st.set_page_config(page_title="Insurance Quote Request", layout="centered")
 
-GOOGLE_SHEET_NAME = "Insurance_Quote_Leads"
+# 🔴 IMPORTANT: put your real Google Sheet ID here (the one you copied)
+# It looks like a long string from the Sheets URL between /d/ and /edit
+SHEET_ID = "1og5tSQ2xSAt1iXADHrIIOm1ON48gwOjrxEnlF-k_XdI"
 
 
 @st.cache_resource
@@ -23,10 +25,12 @@ def get_gsheet_client():
     import gspread
     from google.oauth2.service_account import Credentials
 
+    # Read the JSON from secrets (we stored the whole JSON string there)
     creds_dict = json.loads(creds_json_str, strict=False)
+
+    # Only use the Sheets scope – no Drive storage
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
     ]
     credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     client = gspread.authorize(credentials)
@@ -34,20 +38,19 @@ def get_gsheet_client():
 
 
 def append_submission_to_sheet(submission: dict):
-    """Append one submission as a row in the Google Sheet."""
+    """Append one submission as a row in the existing Google Sheet."""
     client = get_gsheet_client()
     if client is None:
         return
 
     try:
-        sheet = client.open(GOOGLE_SHEET_NAME).sheet1
-    except Exception:
-        # If the sheet doesn't exist yet, create it and add header row
-        sh = client.create(GOOGLE_SHEET_NAME)
-        sheet = sh.sheet1
-        sheet.append_row(list(submission.keys()))
+        # Open the sheet directly by its ID
+        sheet = client.open_by_key(SHEET_ID).sheet1
+    except Exception as e:
+        st.error(f"Error opening Google Sheet: {e}")
+        return
 
-    # Ensure header exists
+    # Ensure header row exists
     existing_headers = sheet.row_values(1)
     if not existing_headers:
         sheet.append_row(list(submission.keys()))
@@ -65,7 +68,7 @@ def load_all_submissions() -> pd.DataFrame:
         return pd.DataFrame()
 
     try:
-        sheet = client.open(GOOGLE_SHEET_NAME).sheet1
+        sheet = client.open_by_key(SHEET_ID).sheet1
         data = sheet.get_all_records()
     except Exception as e:
         st.error(f"Error loading submissions from Google Sheets: {e}")
@@ -112,7 +115,7 @@ st.markdown(
         font-weight: 600;
     }
     .rose-header a:hover {
-        text-decoration: underline;
+        text-decoration: underline.
     }
     .section-card {
         background-color: transparent;
