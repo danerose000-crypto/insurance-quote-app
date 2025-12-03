@@ -163,11 +163,11 @@ st.markdown(
 st.markdown(
     """
     <div class="rose-header">
-        <h1>Rose Insurance – Online Quote Request</h1>
+        <h1>Ideal Solutions – Online Quote Request</h1>
         <p>Questions or prefer to talk it through?</p>
         <p>
             Email:
-            <a href="mailto:Roseinserv@gmail.com">Roseinserv@gmail.com</a>
+            <a href="mailto:danerose000@gmail.com">danerose000@gmail.com</a>
             &nbsp;|&nbsp;
             Call / Text:
             <a href="tel:17023032170">(702) 303-2170</a>
@@ -176,6 +176,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
 
 
 st.write("Fill this out and I'll shop your insurance options and follow up with you.")
